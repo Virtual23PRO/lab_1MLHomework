@@ -4,7 +4,8 @@ import joblib
 from sentence_transformers import SentenceTransformer
 import torch
 
-MODELS_DIR = Path("models")
+SBERT_PATH = Path("models/models/sentence_transformer.model")
+LOGREG_PATH = Path("models/models/classifier.joblib")
 
 Label = Literal["negative", "neutral", "positive"]
 ID2LABEL: dict[int, Label] = {0: "negative", 1: "neutral", 2: "positive"}
@@ -26,17 +27,12 @@ def _find_logreg_file(root: Path) -> Path:
 class SentimentPipeline:
     def __init__(
         self,
-        models_dir: Path = MODELS_DIR,
-        encoder_dir: Optional[Path] = None,
-        logreg_path: Optional[Path] = None,
+        encoder_dir: Path = SBERT_PATH,
+        logreg_path: Path = LOGREG_PATH,
     ):
-        models_dir = models_dir.resolve()
-        enc_dir = encoder_dir or _find_encoder_dir(models_dir)
-        clf_path = logreg_path or _find_logreg_file(models_dir)
-
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.encoder = SentenceTransformer(str(enc_dir), device=device)
-        self.clf = joblib.load(clf_path)
+        self.encoder = SentenceTransformer(str(encoder_dir), device=device)
+        self.clf = joblib.load(logreg_path)
 
     def predict(self, text: str) -> Label:
         emb = self.encoder.encode([text], convert_to_numpy=True)
